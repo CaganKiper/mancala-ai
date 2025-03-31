@@ -55,7 +55,7 @@ class BaseEnvironment:
         self.board = np.zeros(2 * (self.num_pits + 1), dtype=np.int32)
 
         # Fill pits with initial stones (excluding stores)
-        for i in range(2 * self.num_pits):
+        for i in range(2 * (self.num_pits + 1)):
             if i != self.num_pits and i != 2 * self.num_pits + 1:
                 self.board[i] = self.num_stones
 
