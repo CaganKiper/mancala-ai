@@ -24,6 +24,8 @@ class BaseEnvironment:
         done (bool): Whether the game is finished.
     """
 
+    DISPLAY_NAME = "Mancala Game"  # Default display name, should be overridden by subclasses
+
     def __init__(self, num_pits: int = 6, num_stones: int = 4):
         """Initialize the Mancala environment.
 
@@ -33,13 +35,13 @@ class BaseEnvironment:
         """
         self.num_pits = num_pits
         self.num_stones = num_stones
-        
+
         # Board representation:
         # [p0_pit0, p0_pit1, ..., p0_store, p1_pit0, p1_pit1, ..., p1_store]
         self.board = None
         self.current_player = None
         self.done = None
-        
+
         # Initialize the game
         self.reset()
 
@@ -51,16 +53,16 @@ class BaseEnvironment:
         """
         # Initialize the board with num_stones in each pit and 0 in stores
         self.board = np.zeros(2 * (self.num_pits + 1), dtype=np.int32)
-        
+
         # Fill pits with initial stones (excluding stores)
         for i in range(2 * self.num_pits):
             if i != self.num_pits and i != 2 * self.num_pits + 1:
                 self.board[i] = self.num_stones
-        
+
         # Player 0 starts
         self.current_player = 0
         self.done = False
-        
+
         return self._get_observation()
 
     def step(self, action: int) -> Tuple[np.ndarray, float, bool, bool, Dict]:
@@ -79,17 +81,17 @@ class BaseEnvironment:
         """
         if self.done:
             return self._get_observation(), 0.0, True, False, {"error": "Game already finished"}
-        
+
         # Validate action
         if not self._is_valid_action(action):
             return self._get_observation(), -1.0, False, False, {"error": "Invalid action"}
-        
+
         # Execute the move
         reward = self._execute_move(action)
-        
+
         # Check if the game is finished
         self._check_game_end()
-        
+
         return self._get_observation(), reward, self.done, False, {}
 
     def render(self) -> None:
@@ -97,11 +99,11 @@ class BaseEnvironment:
         # Player 1's pits (reversed)
         p1_pits = self.board[self.num_pits + 1:2 * self.num_pits + 1]
         p1_store = self.board[2 * self.num_pits + 1]
-        
+
         # Player 0's pits
         p0_pits = self.board[:self.num_pits]
         p0_store = self.board[self.num_pits]
-        
+
         # Print the board
         print("\nCurrent board state:")
         print("    " + " ".join(f"{pit:2d}" for pit in reversed(p1_pits)))
@@ -129,10 +131,10 @@ class BaseEnvironment:
         # Action must be within range and the selected pit must have stones
         if action < 0 or action >= self.num_pits:
             return False
-        
+
         # Calculate the actual index in the board array based on current player
         board_idx = action if self.current_player == 0 else self.num_pits + 1 + action
-        
+
         # The pit must have stones
         return self.board[board_idx] > 0
 
@@ -147,32 +149,32 @@ class BaseEnvironment:
         """
         # This is a base implementation that will be overridden by specific game variants
         # In the base implementation, we just distribute stones counter-clockwise
-        
+
         # Calculate the actual index in the board array based on current player
         board_idx = action if self.current_player == 0 else self.num_pits + 1 + action
-        
+
         # Pick up stones
         stones = self.board[board_idx]
         self.board[board_idx] = 0
-        
+
         # Distribute stones
         current_idx = board_idx
         while stones > 0:
             current_idx = (current_idx + 1) % len(self.board)
-            
+
             # Skip opponent's store
             opponent_store = 2 * self.num_pits + 1 if self.current_player == 0 else self.num_pits
             if current_idx == opponent_store:
                 continue
-            
+
             # Place a stone
             self.board[current_idx] += 1
             stones -= 1
-        
+
         # Switch player (in base implementation, always switch)
         # Specific variants might have rules for extra turns
         self.current_player = 1 - self.current_player
-        
+
         # Basic reward: number of stones in player's store
         player_store = self.num_pits if self.current_player == 0 else 2 * self.num_pits + 1
         return float(self.board[player_store])
@@ -182,10 +184,10 @@ class BaseEnvironment:
         # Check if all pits of either player are empty
         p0_pits_empty = all(self.board[i] == 0 for i in range(self.num_pits))
         p1_pits_empty = all(self.board[i] == 0 for i in range(self.num_pits + 1, 2 * self.num_pits + 1))
-        
+
         if p0_pits_empty or p1_pits_empty:
             self.done = True
-            
+
             # In most Mancala variants, remaining stones go to the respective player's store
             if p0_pits_empty:
                 # Move all stones from player 1's pits to their store
@@ -219,10 +221,10 @@ class BaseEnvironment:
         """
         if not self.done:
             return None
-        
+
         p0_score = self.board[self.num_pits]
         p1_score = self.board[2 * self.num_pits + 1]
-        
+
         if p0_score > p1_score:
             return 0
         elif p1_score > p0_score:
