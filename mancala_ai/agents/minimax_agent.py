@@ -5,7 +5,7 @@ Minimax algorithm to select actions.
 """
 
 import copy
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 
 import numpy as np
 
@@ -27,6 +27,41 @@ class MinimaxAgent(Agent):
         """
         super().__init__(name)
         self.depth = depth
+
+    def get_settings(self) -> Dict[str, Tuple[Any, str, str]]:
+        """Get the agent's configurable settings.
+
+        Returns:
+            A dictionary mapping setting names to tuples of 
+            (current_value, description, type).
+        """
+        return {
+            "depth": (self.depth, "Maximum depth to search in the game tree", "int")
+        }
+
+    def set_setting(self, setting_name: str, value: Any) -> bool:
+        """Set a specific setting to a new value.
+
+        Args:
+            setting_name: The name of the setting to change.
+            value: The new value for the setting.
+
+        Returns:
+            True if the setting was successfully updated, False otherwise.
+        """
+        if setting_name == "depth":
+            try:
+                depth = int(value)
+                if depth > 0:
+                    self.depth = depth
+                    return True
+                else:
+                    print("Depth must be a positive integer.")
+                    return False
+            except ValueError:
+                print("Depth must be a valid integer.")
+                return False
+        return False
 
     def get_action(self, env: BaseEnvironment) -> int:
         """Get the best action according to the Minimax algorithm.
@@ -81,20 +116,20 @@ class MinimaxAgent(Agent):
         for action in valid_actions:
             # Create a deep copy of the environment
             env_copy = copy.deepcopy(env)
-            
+
             # Take the action
             original_player = env_copy.current_player
             _, reward, terminated, _, _ = env_copy.step(action)
-            
+
             # Check if the player gets an extra turn (current player didn't change)
             extra_turn = not terminated and env_copy.current_player == original_player
-            
+
             # If the player gets an extra turn, it's still their turn in the minimax tree
             next_maximizing = maximizing_player if extra_turn else not maximizing_player
-            
+
             # Recursively evaluate the resulting state
             _, value = self._minimax(env_copy, depth - 1, next_maximizing)
-            
+
             # Update best action and value
             if maximizing_player:
                 if value > best_value:
@@ -129,7 +164,7 @@ class MinimaxAgent(Agent):
         # Otherwise, use the difference in stones in the stores as the evaluation
         player0_store = env.board[env.num_pits]
         player1_store = env.board[2 * env.num_pits + 1]
-        
+
         # Return the difference from the perspective of the current player
         if env.current_player == 0:
             return player0_store - player1_store

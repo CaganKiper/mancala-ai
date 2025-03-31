@@ -98,6 +98,55 @@ def choose_game_version() -> Tuple[str, Callable[..., BaseEnvironment]]:
             print("Invalid input. Please enter a number.")
 
 
+def configure_agent_settings(agent: Agent) -> None:
+    """Configure the settings for an agent.
+
+    Args:
+        agent: The agent to configure.
+    """
+    if not agent.has_settings():
+        return
+
+    settings = agent.get_settings()
+    print(f"\nSettings for {agent.name}:")
+
+    while True:
+        # Display current settings
+        print("\nCurrent settings:")
+        setting_names = list(settings.keys())
+        for i, name in enumerate(setting_names, 1):
+            value, description, _ = settings[name]
+            print(f"{i}. {name}: {value} - {description}")
+
+        # Ask if the user wants to change any settings
+        choice = input("\nDo you want to change any settings? (y/n): ")
+        if choice.lower() not in ['y', 'yes']:
+            break
+
+        # Ask which setting to change
+        setting_choice = input(f"Enter setting number to change (1-{len(setting_names)}): ")
+        try:
+            setting_idx = int(setting_choice) - 1
+            if 0 <= setting_idx < len(setting_names):
+                setting_name = setting_names[setting_idx]
+                current_value, _, setting_type = settings[setting_name]
+
+                # Get new value
+                new_value = input(f"Enter new value for {setting_name} (current: {current_value}): ")
+
+                # Update the setting
+                if agent.set_setting(setting_name, new_value):
+                    print(f"Setting {setting_name} updated successfully.")
+                    # Refresh settings
+                    settings = agent.get_settings()
+                else:
+                    print(f"Failed to update setting {setting_name}.")
+            else:
+                print(f"Invalid choice. Please enter a number between 1 and {len(setting_names)}.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+
 def choose_player(player_num: int) -> Agent:
     """Let the user choose a player type.
 
@@ -146,9 +195,14 @@ def choose_player(player_num: int) -> Agent:
                     name = input(f"Enter name for Player {player_num} (default: Player {player_num}): ")
                     if name == "":
                         name = f"Player {player_num}"
-                    return selected_class(name)
+                    agent = selected_class(name)
                 else:
-                    return selected_class(f"{selected_name}")
+                    agent = selected_class(f"{selected_name}")
+
+                # Configure agent settings if available
+                configure_agent_settings(agent)
+
+                return agent
             else:
                 print(f"Invalid choice. Please enter a number between 1 and {len(agent_names)}.")
         except ValueError:
