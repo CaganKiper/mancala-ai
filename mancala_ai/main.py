@@ -148,7 +148,7 @@ def choose_player(player_num: int) -> Agent:
                         name = f"Player {player_num}"
                     return selected_class(name)
                 else:
-                    return selected_class(f"{selected_name} Player {player_num}")
+                    return selected_class(f"{selected_name}")
             else:
                 print(f"Invalid choice. Please enter a number between 1 and {len(agent_names)}.")
         except ValueError:
@@ -189,10 +189,7 @@ def play_game(env: BaseEnvironment, players: List[Agent]) -> Optional[int]:
         _, reward, terminated, _, _ = env.step(action)
 
         print(f"{current_player.name} chose pit {action + 1}")
-
-        # Optional: add a small delay or prompt to continue for better UX
-        if not terminated and current_player.is_interactive:
-            input("Press Enter to continue...")
+        # No confirmation needed for human players as per requirements
 
     # Render the final state
     env.render()

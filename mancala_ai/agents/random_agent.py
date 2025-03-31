@@ -13,7 +13,7 @@ from mancala_ai.environments.base_environment import BaseEnvironment
 class RandomAgent(Agent):
     """AI agent that selects random valid actions."""
 
-    DISPLAY_NAME = "Random Player"  # Custom display name for this agent
+    DISPLAY_NAME = "Random Agent"  # Custom display name for this agent
 
     def get_action(self, env: BaseEnvironment) -> int:
         """Get a random valid action.
