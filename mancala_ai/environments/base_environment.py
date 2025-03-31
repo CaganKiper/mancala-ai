@@ -84,7 +84,7 @@ class BaseEnvironment:
 
         # Validate action
         if not self._is_valid_action(action):
-            return self._get_observation(), -1.0, False, False, {"error": "Invalid action"}
+            return self._get_observation(), -5.0, False, False, {"error": "Invalid action"}
 
         # Execute the move
         reward = self._execute_move(action)
@@ -92,6 +92,21 @@ class BaseEnvironment:
         # Check if the game is finished
         self._check_game_end()
 
+        # Add terminal rewards if the game is finished
+        if self.done:
+            winner = self.get_winner()
+            if winner is not None:
+                # Positive reward for winning, negative for losing
+                terminal_reward = 100.0 if winner == self.current_player else -100.0
+                reward += terminal_reward
+            else:
+                # Small positive reward for a draw
+                reward += 10.0
+
+        # Add a small step penalty to encourage faster solutions
+        reward -= 0.1
+
+        # Return normalized reward
         return self._get_observation(), reward, self.done, False, {}
 
     def render(self) -> None:
@@ -153,12 +168,17 @@ class BaseEnvironment:
         # Calculate the actual index in the board array based on current player
         board_idx = action if self.current_player == 0 else self.num_pits + 1 + action
 
+        # Get the initial state of the player's store for reward calculation
+        player_store = self.num_pits if self.current_player == 0 else 2 * self.num_pits + 1
+        initial_store_count = self.board[player_store]
+
         # Pick up stones
         stones = self.board[board_idx]
         self.board[board_idx] = 0
 
         # Distribute stones
         current_idx = board_idx
+        last_idx = None
         while stones > 0:
             current_idx = (current_idx + 1) % len(self.board)
 
@@ -171,13 +191,41 @@ class BaseEnvironment:
             self.board[current_idx] += 1
             stones -= 1
 
+            # Remember the last index where a stone was placed
+            last_idx = current_idx
+
         # Switch player (in base implementation, always switch)
         # Specific variants might have rules for extra turns
+        original_player = self.current_player
         self.current_player = 1 - self.current_player
 
-        # Basic reward: number of stones in player's store
-        player_store = self.num_pits if self.current_player == 0 else 2 * self.num_pits + 1
-        return float(self.board[player_store])
+        # Calculate reward components
+        reward = 0.0
+
+        # 1. Reward for stones added to the player's store
+        stones_added = self.board[player_store] - initial_store_count
+        reward += stones_added * 1.0  # Base reward for each stone added
+
+        # 2. Reward for ending in the player's store (would give an extra turn in some variants)
+        if last_idx == player_store:
+            reward += 2.0  # Bonus for ending in store
+
+        # 3. Reward for distributing many stones (encourages choosing pits with more stones)
+        reward += min(stones, 5) * 0.2  # Small bonus based on number of stones moved, capped at 5
+
+        # 4. Reward for strategic positioning (having stones in pits close to the store)
+        player_side_start = 0 if original_player == 0 else self.num_pits + 1
+        player_side_end = self.num_pits - 1 if original_player == 0 else 2 * self.num_pits
+
+        position_reward = 0.0
+        for i in range(player_side_start, player_side_end + 1):
+            # Weight positions closer to the store more heavily
+            position_weight = (i - player_side_start + 1) / (player_side_end - player_side_start + 1)
+            position_reward += self.board[i] * position_weight * 0.1
+
+        reward += position_reward
+
+        return reward
 
     def _check_game_end(self) -> None:
         """Check if the game has ended and update the done flag."""

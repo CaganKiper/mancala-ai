@@ -74,7 +74,7 @@ class TestBaseEnvironment:
         """Test that taking an invalid action returns an error."""
         # Try to take an action that's out of range
         observation, reward, terminated, truncated, info = base_environment.step(-1)
-        assert reward == -1.0
+        assert reward == -5.0
         assert not terminated
         assert not truncated
         assert "error" in info
@@ -82,7 +82,7 @@ class TestBaseEnvironment:
         # Empty a pit and try to select it
         base_environment.board[0] = 0
         observation, reward, terminated, truncated, info = base_environment.step(0)
-        assert reward == -1.0
+        assert reward == -5.0
         assert not terminated
         assert not truncated
         assert "error" in info
