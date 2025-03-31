@@ -6,6 +6,7 @@ including human agents and AI agents.
 
 from mancala_ai.agents.base_agent import Agent
 from mancala_ai.agents.human_agent import HumanAgent
+from mancala_ai.agents.minimax_agent import MinimaxAgent
 from mancala_ai.agents.random_agent import RandomAgent
 
-__all__ = ["Agent", "HumanAgent", "RandomAgent"]
+__all__ = ["Agent", "HumanAgent", "MinimaxAgent", "RandomAgent"]
